@@ -55,11 +55,13 @@ class AtlasNavigation(unittest.TestCase):
                 requests = []
                 page.on("request", lambda r: requests.append(r.url))
                 page.goto(self.url)
-                expect(page.get_by_role("heading", level=1)).to_have_text("Themenauswahl")
+                expect(page.get_by_role("heading", level=1)).to_have_text("Formeln und ihre Verbindungen.")
                 article = page.locator("article")
-                expect(article.locator("h2")).to_have_count(len(self.collection["areas"]))
+                expect(article.get_by_role("heading", name="Gebiet auswählen")).to_be_visible()
+                expect(article.locator(".subject-card h3")).to_have_count(len(self.collection["areas"]))
                 expect(article.get_by_role("heading", name="Algebra", exact=True)).to_be_visible()
-                self.assertEqual(page.locator("a[href*='eintrag=']").count(), 0)
+                expect(article.locator(".feature-link")).to_have_attribute("href", "#eintrag=" + self.collection["start"])
+                expect(page.locator("#catalog a[href*='eintrag=']")).to_have_count(0)
                 article.get_by_role("link", name="Geometrie").click()
                 article.get_by_role("link", name="Rechtwinklige Dreiecke").click()
                 article.locator("a[href='#eintrag=hoehensatz']").click()
@@ -100,6 +102,34 @@ class AtlasNavigation(unittest.TestCase):
                 self.assertTrue(page.evaluate("document.documentElement.scrollWidth <= innerWidth"))
                 page.close()
 
+    def test_start_page_layout_and_feature_link(self):
+        start = next(entry for entry in self.collection["entries"] if entry["id"] == self.collection["start"])
+        for width in [320, 1440]:
+            with self.subTest(width=width):
+                page = self.new_page(width)
+                page.goto(self.url)
+                heading = page.get_by_role("heading", level=1)
+                expect(heading).to_have_css("font-weight", "400")
+                self.assertIn("Liberation Serif Web", heading.evaluate("el => getComputedStyle(el).fontFamily"))
+                rail = page.locator("aside").bounding_box()
+                bar = page.locator(".topbar").bounding_box()
+                if width == 320:
+                    self.assertEqual(bar["y"], rail["y"] + rail["height"])
+                    self.assertEqual(page.locator(".labs-link").bounding_box()["y"], page.locator("#theme").bounding_box()["y"])
+                    expect(page.locator(".feature img")).to_be_hidden()
+                else:
+                    self.assertEqual(bar["x"], rail["x"] + rail["width"])
+                    self.assertEqual(rail["height"], page.viewport_size["height"])
+                    expect(page.locator(".feature img")).to_be_visible()
+                feature = page.get_by_role("link", name=start["title"] + " öffnen")
+                feature.focus()
+                page.keyboard.press("Enter")
+                expect(heading).to_have_text(start["title"])
+                page.go_back()
+                expect(feature).to_be_focused()
+                expect(page.locator("html")).to_have_js_property("scrollWidth", width)
+                page.close()
+
     def test_dense_map_and_keyboard(self):
         page = self.new_page(360)
         page.goto(self.url + "?probe=30#eintrag=aehnlichkeitslemma&ansicht=mindmap")
@@ -133,7 +163,7 @@ class AtlasNavigation(unittest.TestCase):
         page.locator("#directory > summary").click()
         page.locator("#catalog-search").fill("Verhältnis")
         expect(page.locator("#catalog")).to_contain_text("Verhältnisgleichung")
-        controls = page.locator("#theme, #catalog-search, #directory > summary, .views .control")
+        controls = page.locator(".labs-link, #theme, #catalog-search, #directory > summary, .views .control")
         for height, radius in controls.evaluate_all("(els) => els.map(e => [e.getBoundingClientRect().height, getComputedStyle(e).borderRadius])"):
             self.assertEqual(height, 44)
             self.assertEqual(radius, "0px")
@@ -142,14 +172,14 @@ class AtlasNavigation(unittest.TestCase):
         page.goto(self.url + "#eintrag=unbekannt")
         expect(page.get_by_role("heading", level=1)).to_have_text("Eintrag nicht gefunden")
         page.get_by_role("link", name="Zur Themenauswahl").click()
-        expect(page.get_by_role("heading", level=1)).to_have_text("Themenauswahl")
+        expect(page.get_by_role("heading", level=1)).to_have_text("Formeln und ihre Verbindungen.")
         page.goto(self.url + "#eintrag=hoehensatz&beweis=aehnlichkeit&schritt=unbekannt")
         expect(page.locator(".note").last).to_contain_text("Diese Beweisstelle ist unbekannt")
 
     def test_directory_filter_and_global_search(self):
         page = self.new_page(390)
         page.goto(self.url)
-        expect(page.get_by_role("heading", level=1)).to_have_text("Themenauswahl")
+        expect(page.get_by_role("heading", level=1)).to_have_text("Formeln und ihre Verbindungen.")
         directory = page.locator("#directory")
         directory.locator(":scope > summary").click()
         directory.get_by_text("Geometrie", exact=True).focus()
@@ -192,7 +222,7 @@ class AtlasNavigation(unittest.TestCase):
         page.goto(self.url)
         total = len(fixture["entries"])
         expect(page.locator("#entry-count")).to_have_text(f"{total} Einträge")
-        expect(page.locator("a[href*='eintrag=']")).to_have_count(0)
+        expect(page.locator("a[href*='eintrag=']")).to_have_count(1)
         page.goto(self.url + "#thema=probedaten&typ=Beispiel")
         entries = page.locator(".topic-results")
         expect(entries.locator(".catalog-row")).to_have_count(20)

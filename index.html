@@ -7,35 +7,44 @@
   <title>Maths Atlas</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./assets/atlas.css">
+  <link rel="stylesheet" href="./assets/shell.css">
   <script type="module" src="./js/app.js"></script>
 </head>
 <body>
   <a class="skip" href="#lesebereich">Zum Inhalt</a>
-  <header class="mast"><div class="mast-inner">
-    <a class="brand" href="./" aria-label="Maths Atlas, Startseite"><span class="brand-glyph" aria-hidden="true">∿</span> Maths Atlas</a>
-    <span class="chapter" id="chapter"></span>
-    <label class="theme-control"><span class="sr">Farbschema</span><select id="theme"><option value="system">Systemfarben</option><option value="light">Hell</option><option value="dark">Dunkel</option></select></label>
-  </div></header>
   <div class="shell">
-    <aside class="directory">
+    <aside class="directory" aria-label="Atlasnavigation">
+      <a class="brand" href="./" aria-label="Maths Atlas, Startseite"><span class="brand-glyph" aria-hidden="true">∿</span><span>Maths Atlas<small>Learning Labs</small></span></a>
+      <div class="rail-label">Der Atlas</div>
+      <nav id="rail-nav" aria-label="Übersicht"></nav>
       <details id="directory">
-        <summary><span>Verzeichnis</span><span id="entry-count" class="count"></span></summary>
+        <summary><span class="index-icon" aria-hidden="true">≡</span><span>Verzeichnis</span></summary>
         <div class="directory-inner">
           <label for="catalog-search">Atlasweit suchen</label>
-          <input type="search" id="catalog-search" placeholder="Titel, Formel oder Begriff" autocomplete="off">
+          <input type="search" id="catalog-search" placeholder="z. B. Kreis oder π" autocomplete="off">
           <nav id="catalog" aria-label="Verzeichnis">
             <div id="catalog-tree"></div>
             <div id="catalog-results" hidden></div>
           </nav>
         </div>
       </details>
+      <footer class="rail-footer">
+        <span id="entry-count"></span>
+        <a href="https://github.com/philippklinz/maths-atlas-content">Inhalte auf GitHub</a>
+      </footer>
     </aside>
-    <main id="lesebereich" tabindex="-1">
-      <nav id="breadcrumbs" aria-label="Themenpfad"></nav>
-      <div id="navigation"></div>
-      <article id="article" aria-busy="true"><p role="status">Der Atlas wird geladen …</p></article>
-      <noscript>Bitte aktiviere JavaScript, um die Einträge und ihre Verbindungen zu öffnen.</noscript>
-    </main>
+    <div class="workspace">
+      <header class="topbar">
+        <a class="control labs-link" href="https://philipp-klinz.net/learning-labs/"><span aria-hidden="true">←</span> Learning Labs</a>
+        <label class="theme-control"><span>Farbschema</span><select id="theme"><option value="system">Systemfarben</option><option value="light">Hell</option><option value="dark">Dunkel</option></select></label>
+      </header>
+      <main class="page" id="lesebereich" tabindex="-1">
+        <nav id="breadcrumbs" aria-label="Themenpfad"></nav>
+        <div id="navigation"></div>
+        <article id="article" aria-busy="true"><p role="status">Der Atlas wird geladen …</p></article>
+        <noscript>Bitte aktiviere JavaScript, um die Einträge und ihre Verbindungen zu öffnen.</noscript>
+      </main>
+    </div>
   </div>
 </body>
 </html>

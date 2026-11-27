@@ -1,19 +1,44 @@
-import {el} from "./dom.js"
+import {el, figureImage} from "./dom.js"
+import {formulaText} from "./model.js"
 
 const pageSize = 20
 export const entryCount = n => n + (n === 1 ? " Eintrag" : " Einträge")
+
+export function renderIntro(heading, atlas, link) {
+  const topics = atlas.topics.size
+  const stats = (topics === 1 ? "1 Thema" : topics + " Themen") + " · " + entryCount(atlas.entries.size)
+  const intro = el("header", "intro", el("div", "intro-copy",
+    el("p", "eyebrow", stats), heading,
+    el("p", "lead", "Wähle ein Gebiet und folge einer Formel zu ihren Größen, verwandten Sätzen und Beweisen.")))
+  const entry = atlas.entries.get(atlas.data.start)
+  if (!entry) return intro
+  const figure = atlas.data.figures?.[entry.figure]
+  const formula = formulaText(entry.formula)
+  if (!figure && !formula) return intro
+  const topic = atlas.entryTopics.get(entry.id)
+  const copy = el("div", "feature-copy", el("p", "eyebrow", topic.title + " · " + entry.kind))
+  if (formula) copy.append(el("p", "feature-formula", formula))
+  copy.append(link(entry.title + " öffnen", {id:entry.id}, {directory:true}, "feature-link"))
+  const feature = el("div", "feature", copy)
+  if (figure) feature.append(figureImage(figure, atlas.source, "lazy"))
+  intro.append(feature)
+  return intro
+}
 
 export function renderCards(items, isArea, link) {
   const list = el("ul", "subject-cards")
   for (const item of items) {
     const target = isArea ? {area:item.id} : {topic:item.id}
     const title = link(item.title, target, {directory:true})
-    const card = el("li", "subject-card", el("h2", "", title))
+    const mark = el("span", "subject-mark")
+    if (isArea) mark.dataset.area = item.id
+    mark.setAttribute("aria-hidden", "true")
+    const card = el("li", "subject-card", mark, el("h3", "", title))
     if (item.summary) card.append(el("p", "", item.summary))
     const count = isArea
       ? item.topics.length + (item.topics.length === 1 ? " Thema" : " Themen") + " · " + entryCount(item.count)
       : entryCount(item.entries.length)
-    card.append(el("span", "count", count))
+    card.append(el("span", "card-count", count))
     list.append(card)
   }
   return list
@@ -26,6 +51,7 @@ export function renderTree(root, atlas, currentArea, currentTopic, openAreas, li
     summary.dataset.key = "directory-area-" + area.id
     const details = el("details", "directory-area", summary)
     details.dataset.area = area.id
+    details.classList.toggle("current-area", area === currentArea)
     const topics = el("ul", "tree-topics")
     function populate() {
       if (!details.open || topics.childElementCount) return
