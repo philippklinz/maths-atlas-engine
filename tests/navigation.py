@@ -1,5 +1,6 @@
 """Smoke test for a checkout with maths-atlas-content beside maths-atlas-engine."""
 import functools
+import json
 import os
 import threading
 import unittest
@@ -50,8 +51,19 @@ class AtlasNavigation(unittest.TestCase):
                 requests = []
                 page.on("request", lambda r: requests.append(r.url))
                 page.goto(self.url)
+                expect(page.get_by_role("heading", level=1)).to_have_text("Themenauswahl")
+                article = page.locator("article")
+                expect(article.locator("h2")).to_have_text(["Algebra", "Geometrie"])
+                self.assertEqual(page.locator("a[href*='eintrag=']").count(), 0)
+                article.get_by_role("link", name="Geometrie").click()
+                article.get_by_role("link", name="Rechtwinklige Dreiecke").click()
+                article.locator("a[href='#eintrag=hoehensatz']").click()
                 expect(page.get_by_role("heading", level=1)).to_have_text("Höhensatz")
-                self.assertEqual(page.locator("#catalog a").count(), 6)
+                expect(article.locator("figure img")).to_be_visible()
+                expect(article.get_by_role("heading", name="Zahlenbeispiel")).to_be_visible()
+                expect(article.get_by_role("heading", name="Verknüpfungen")).to_be_visible()
+                article.get_by_role("link", name="Zum Beweis").click()
+                expect(page.locator(".proof h2")).to_be_in_viewport()
                 self.assertFalse(any("/vendor/" in url for url in requests))
                 step = page.locator("#schritt-aehnlichkeit-dreiecke-vergleichen")
                 step.locator("summary").click()
@@ -89,7 +101,8 @@ class AtlasNavigation(unittest.TestCase):
         status = page.get_by_role("status")
         expect(status).to_have_text("1–4 von 33 Verbindungen")
         expect(page.locator(".graph canvas")).to_be_visible()
-        self.assertEqual(page.locator("#catalog a").count(), 36)
+        expect(page.locator("#entry-count")).to_have_text("36 Einträge")
+        expect(page.locator("#catalog .catalog-row")).to_have_count(0)
         page.get_by_role("button", name="Weitere").focus()
         page.keyboard.press("Enter")
         expect(status).to_have_text("5–8 von 33 Verbindungen")
@@ -111,21 +124,85 @@ class AtlasNavigation(unittest.TestCase):
         expect(page.locator("html")).to_have_attribute("data-scheme", "dark")
         page.locator("#theme").select_option("light")
         expect(page.locator("html")).to_have_attribute("data-scheme", "light")
-        page.locator("#directory summary").click()
+        page.locator("#directory > summary").click()
         page.locator("#catalog-search").fill("Verhältnis")
         expect(page.locator("#catalog")).to_contain_text("Verhältnisgleichung")
-        controls = page.locator("#theme, #catalog-search, #directory summary, .views .control")
+        controls = page.locator("#theme, #catalog-search, #directory > summary, .views .control")
         for height, radius in controls.evaluate_all("(els) => els.map(e => [e.getBoundingClientRect().height, getComputedStyle(e).borderRadius])"):
             self.assertEqual(height, 44)
             self.assertEqual(radius, "0px")
         page.locator("#catalog-search").fill("xyzxyz")
-        expect(page.locator("#catalog")).to_have_text("Keine passenden Einträge.")
+        expect(page.locator("#catalog-results").get_by_role("status")).to_have_text("Keine passenden Einträge.")
         page.goto(self.url + "#eintrag=unbekannt")
         expect(page.get_by_role("heading", level=1)).to_have_text("Eintrag nicht gefunden")
-        page.get_by_role("link", name="Zum Starteintrag").click()
-        expect(page.get_by_role("heading", level=1)).to_have_text("Höhensatz")
+        page.get_by_role("link", name="Zur Themenauswahl").click()
+        expect(page.get_by_role("heading", level=1)).to_have_text("Themenauswahl")
         page.goto(self.url + "#eintrag=hoehensatz&beweis=aehnlichkeit&schritt=unbekannt")
         expect(page.locator(".note").last).to_contain_text("Diese Beweisstelle ist unbekannt")
+
+    def test_directory_filter_and_global_search(self):
+        page = self.new_page(390)
+        page.goto(self.url)
+        expect(page.get_by_role("heading", level=1)).to_have_text("Themenauswahl")
+        directory = page.locator("#directory")
+        directory.locator(":scope > summary").click()
+        directory.get_by_text("Geometrie", exact=True).focus()
+        page.keyboard.press("Enter")
+        directory.get_by_role("link", name="Rechtwinklige Dreiecke").click()
+        expect(page.get_by_role("heading", level=1)).to_have_text("Rechtwinklige Dreiecke")
+        expect(page.locator(".topic-results .catalog-row")).to_have_count(5)
+        kinds = page.get_by_label("Eintragsart")
+        kinds.select_option("Satz")
+        expect(page.locator(".topic-results .result-title")).to_have_text(["Höhensatz", "Kathetensatz", "Satz des Pythagoras"])
+        page.reload()
+        expect(kinds).to_have_value("Satz")
+        directory.locator(":scope > summary").click()
+        search = directory.get_by_role("searchbox", name="Atlasweit suchen")
+        search.fill("verhaltnisgleichung")
+        hit = directory.get_by_role("link", name="Verhältnisgleichung", exact=False)
+        expect(hit).to_contain_text("Algebra / Verhältnisse und Gleichungen")
+        hit.click()
+        expect(page.get_by_role("heading", level=1)).to_have_text("Verhältnisgleichung")
+        expect(page.locator("#breadcrumbs a")).to_have_text(["Themenauswahl", "Algebra", "Verhältnisse und Gleichungen"])
+        page.go_back()
+        expect(kinds).to_have_value("Satz")
+        expect(search).to_have_value("verhaltnisgleichung")
+        expect(hit).to_be_focused()
+        search.fill("")
+        expect(directory.locator("details[data-area='geometrie']")).to_have_attribute("open", "")
+        expect(page.locator("html")).to_have_js_property("scrollWidth", 390)
+
+    def test_large_and_legacy_collection(self):
+        page = self.new_page(320)
+        fixture = json.loads((Path(__file__).resolve().parents[2] / "maths-atlas-content" / "atlas.json").read_text())
+        fixture["entries"] += [
+            {"id": f"probe-{i}", "topic": "rechtwinklige-dreiecke", "kind": "Beispiel",
+             "title": f"Probe {i}", "summary": "Zahlenbeispiel"}
+            for i in range(1, 2001)
+        ]
+        page.route("**/atlas.json", lambda route: route.fulfill(json=fixture))
+        page.goto(self.url)
+        expect(page.locator("#entry-count")).to_have_text("2006 Einträge")
+        expect(page.locator("a[href*='eintrag=']")).to_have_count(0)
+        page.goto(self.url + "#thema=rechtwinklige-dreiecke&typ=Beispiel")
+        entries = page.locator(".topic-results")
+        expect(entries.locator(".catalog-row")).to_have_count(20)
+        entries.get_by_role("button", name="Weitere").click()
+        expect(entries.get_by_role("status")).to_have_text("21–40 von 2000 Einträgen")
+        entries.get_by_role("link", name="Probe 21 Beispiel", exact=True).click()
+        page.go_back()
+        expect(entries.get_by_role("link", name="Probe 21 Beispiel", exact=True)).to_be_focused()
+        page.locator("#directory > summary").click()
+        page.get_by_role("searchbox", name="Atlasweit suchen").fill("Probe")
+        expect(page.locator("#catalog-results .catalog-row")).to_have_count(20)
+        expect(page.locator("#catalog-results").get_by_role("status")).to_have_text("1–20 von 2000 Einträgen")
+        del fixture["areas"]
+        for entry in fixture["entries"]:
+            del entry["topic"]
+        page.goto(self.url)
+        page.locator("article").get_by_role("link", name="Geometrie").click()
+        page.locator("article").get_by_role("link", name="Grundlagen").click()
+        expect(page.locator(".topic-results").get_by_role("status")).to_have_text("1–20 von 2006 Einträgen")
 
 
 if __name__ == "__main__":

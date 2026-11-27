@@ -1,5 +1,6 @@
 import {el} from "./dom.js"
-import {byTitle, formulaText, loadAtlas, normalize, pathFor, readRoute} from "./model.js"
+import {loadAtlas, normalize, pathFor, readRoute} from "./model.js"
+import {entryCount, renderCards, renderEntryList, renderTopic, renderTrail, renderTree} from "./catalog.js"
 import {renderReading} from "./reader.js"
 import {renderMap} from "./map.js"
 
@@ -10,7 +11,7 @@ const search = $("catalog-search")
 const wide = matchMedia("(min-width:52.01rem)")
 const dark = matchMedia("(prefers-color-scheme:dark)")
 const theme = $("theme")
-let atlas, route, mapView, catalogEntries
+let atlas, route, mapView, searchPage, topicPage
 let rendering = false
 let serial = 0
 let saveTimer
@@ -40,18 +41,18 @@ function link(label, target, options = {}, className = "") {
   return a
 }
 
-function showCatalog() {
+function showSearch(page = 0) {
   const query = normalize(search.value.trim())
-  const filtered = catalogEntries.filter(item => item.search.includes(query))
-  const rows = filtered.map(({entry}) => {
-    const row = link(el("span", "", entry.title), {id:entry.id}, {directory:true}, "catalog-row")
-    row.append(el("small", "", entry.kind))
-    if (entry.id === route.id) row.setAttribute("aria-current", "page")
-    return row
-  })
-  if (!rows.length) rows.push(el("p", "note", "Keine passenden Einträge."))
-  $("catalog").replaceChildren(...rows)
-  $("entry-count").textContent = query ? filtered.length + " / " + catalogEntries.length : String(catalogEntries.length)
+  const results = $("catalog-results")
+  $("catalog-tree").hidden = Boolean(query)
+  results.hidden = !query
+  searchPage = null
+  if (!query) {
+    results.replaceChildren()
+    return
+  }
+  const matches = atlas.catalog.filter(item => item.search.includes(query)).map(item => item.entry)
+  searchPage = renderEntryList(results, matches, {atlas, route, link}, page, true)
 }
 
 function findFocus(key) {
@@ -63,7 +64,9 @@ function snapshot(active = document.activeElement) {
   return {
     scroll:window.scrollY, focus:active?.dataset.key, anchor:anchor?.id, offset:anchor?.getBoundingClientRect().top,
     open:[...article.querySelectorAll("details[open]")].map(node => node.id),
-    directory:directory.open, search:search.value, graph:mapView?.snapshot()
+    directory:directory.open, search:search.value, graph:mapView?.snapshot(),
+    openAreas:[...$("catalog-tree").querySelectorAll("details[open]")].map(node => node.dataset.area),
+    searchPage:searchPage?.(), topicPage:topicPage?.()
   }
 }
 function remember(active) {
@@ -95,9 +98,15 @@ function go(target, options = {}, active = document.activeElement) {
     if (target.map) reader = position
     else saved = prior.reader || null
   }
+  if (target.topic && route.topic === target.topic && active?.id === "topic-kind") {
+    saved = {...position, topicPage:0}
+  }
   const key = pathFor(target)
   if (key === pathFor(route) && !options.back && !options.self) {
-    if (options.directory && !wide.matches) directory.open = false
+    if (options.directory && !wide.matches) {
+      directory.open = false
+      $("entry-title")?.focus({preventScroll:true})
+    }
     return
   }
   const next = {key, bookmark, saved, reader}
@@ -157,24 +166,39 @@ function render(state, moveFocus) {
   const run = ++serial
   mapView?.destroy()
   mapView = null
+  topicPage = null
   route = readRoute(atlas.data.start)
   const entry = atlas.entries.get(route.id)
+  const topic = route.id ? atlas.entryTopics.get(route.id) : atlas.topics.get(route.topic)
+  const area = topic?.area || atlas.areas.get(route.area)
+  const home = !route.id && !route.area && !route.topic
   const saved = state.saved
   directory.open = saved?.directory ?? wide.matches
-  if (saved) search.value = saved.search || ""
-  showCatalog()
+  search.value = saved?.search || ""
+  renderTree($("catalog-tree"), atlas, area, topic, saved?.openAreas, link)
+  showSearch(saved?.searchPage)
+  renderTrail($("breadcrumbs"), route, area, topic, link)
   navigation(state, entry)
   article.replaceChildren()
-  const heading = el("h1", "", entry?.title || "Eintrag nicht gefunden")
+  const missing = route.id ? "Eintrag nicht gefunden" : (route.area ? "Gebiet nicht gefunden" : "Thema nicht gefunden")
+  const title = entry?.title || topic?.title || area?.title || (home ? "Themenauswahl" : missing)
+  const heading = el("h1", "", title)
   heading.id = "entry-title"
   heading.tabIndex = -1
+  $("chapter").textContent = area?.title || ""
+  const context = {article, entry, atlas, route, link, go, saved:saved?.graph}
   if (entry) {
-    article.append(el("p", "context", atlas.data.chapter + " / " + entry.kind), heading, el("p", "lead", entry.summary))
-    const context = {article, entry, atlas, route, link, go, saved:saved?.graph}
+    article.append(el("p", "context", area.title + " / " + entry.kind), heading, el("p", "lead", entry.summary))
     if (route.map) mapView = renderMap(context)
     else renderReading(context)
+  } else if (home || area) {
+    article.append(heading)
+    const summary = (topic || area)?.summary
+    if (summary) article.append(el("p", "lead", summary))
+    if (topic) topicPage = renderTopic(article, topic, context, saved?.topicPage)
+    else article.append(renderCards(home ? atlas.areas.values() : area.topics, home, link))
   } else {
-    article.append(heading, el("p", "note", "Dieser Eintrag gehört nicht zum geladenen Bestand."), link("Zum Starteintrag", {id:atlas.data.start}, {directory:true}, "control"))
+    article.append(heading, link("Zur Themenauswahl", {}, {directory:true}, "control"))
   }
   document.title = heading.textContent + (route.map ? " · Mindmap" : "") + " · Maths Atlas"
   for (const id of saved?.open || []) {
@@ -193,10 +217,8 @@ function render(state, moveFocus) {
 async function start() {
   try {
     atlas = await loadAtlas()
-    catalogEntries = [...atlas.entries.values()].sort(byTitle).map(entry => ({
-      entry, search:normalize([entry.title, entry.kind, entry.summary, formulaText(entry.formula)].join(" "))
-    }))
-    $("chapter").textContent = atlas.data.chapter
+    $("entry-count").textContent = entryCount(atlas.entries.size)
+    document.querySelector(".brand").href = pathFor({})
     const initial = readRoute(atlas.data.start)
     const key = pathFor(initial)
     const state = history.state?.key === key ? history.state : {key}
@@ -210,7 +232,7 @@ async function start() {
     article.replaceChildren(el("h1", "", "Atlas konnte nicht geöffnet werden"), el("p", "note", error.message), retry)
   }
 }
-search.oninput = () => { if (atlas) showCatalog(); scheduleSave() }
+search.oninput = () => { if (atlas) showSearch(); scheduleSave() }
 search.dataset.key = "catalog-search"
 wide.addEventListener("change", () => { directory.open = wide.matches })
 document.querySelector(".skip").onclick = event => {

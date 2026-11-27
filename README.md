@@ -10,9 +10,11 @@ Für vollständig lokale Arbeit beide Repos nebeneinander auschecken, im gemeins
 
 ## Am Handy ausprobieren
 
-Öffne den Höhensatz. Finde heraus, warum die Dreiecke im zweiten Schritt ähnlich sind, in welchem weiteren Beweis dieselbe Begründung auftaucht und wie du zu deiner Lesestelle zurückkommst. Mit `?probe=30` nimmt das Verzeichnis zusätzliche Zahlenbeispiele auf.
+Die Startseite zeigt die Themenauswahl. Wähle **Geometrie → Rechtwinklige Dreiecke → Höhensatz**. Im aufklappbaren Verzeichnis findest du dieselben Gebiete und Themen sowie die atlasweite Suche nach Titeln, Begriffen und Formeln. Im Thema kannst du die Einträge nach ihrer Art filtern.
 
-Einträge, Beweise, Beweisschritte und die gewählte Ansicht sind direkt verlinkbar. Zum Beispiel führt `#eintrag=hoehensatz&beweis=aehnlichkeit&schritt=dreiecke-vergleichen` zum Vergleich der beiden Teildreiecke.
+Öffne den Beweis des Höhensatzes. Finde heraus, warum die Dreiecke im zweiten Schritt ähnlich sind, in welchem weiteren Beweis dieselbe Begründung auftaucht und wie du zu deiner Lesestelle zurückkommst. Mit `?probe=30` nimmt das Verzeichnis zusätzliche Zahlenbeispiele auf.
+
+Gebiete, Themen und Eintragsartfilter haben eigene Adressen, zum Beispiel `#thema=rechtwinklige-dreiecke&typ=Satz`. Einträge, Beweise, Beweisschritte und die gewählte Ansicht sind direkt verlinkbar. Zum Beispiel führt `#eintrag=hoehensatz&beweis=aehnlichkeit&schritt=dreiecke-vergleichen` zum Vergleich der beiden Teildreiecke.
 
 ## Browser-Ressourcen
 

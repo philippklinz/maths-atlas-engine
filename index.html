@@ -21,13 +21,17 @@
       <details id="directory">
         <summary><span>Verzeichnis</span><span id="entry-count" class="count"></span></summary>
         <div class="directory-inner">
-          <label for="catalog-search">Einträge suchen</label>
+          <label for="catalog-search">Atlasweit suchen</label>
           <input type="search" id="catalog-search" placeholder="Titel, Formel oder Begriff" autocomplete="off">
-          <nav id="catalog" aria-label="Einträge"></nav>
+          <nav id="catalog" aria-label="Verzeichnis">
+            <div id="catalog-tree"></div>
+            <div id="catalog-results" hidden></div>
+          </nav>
         </div>
       </details>
     </aside>
     <main id="lesebereich" tabindex="-1">
+      <nav id="breadcrumbs" aria-label="Themenpfad"></nav>
       <div id="navigation"></div>
       <article id="article" aria-busy="true"><p role="status">Der Atlas wird geladen …</p></article>
       <noscript>Bitte aktiviere JavaScript, um die Einträge und ihre Verbindungen zu öffnen.</noscript>

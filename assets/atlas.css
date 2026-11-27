@@ -53,6 +53,30 @@ h3 {font-size:1.12rem}
 .directory summary::after {content:"+";margin-left:auto;color:var(--mo-accent);font-size:1.25rem;line-height:1}
 .directory details[open]>summary::after {content:"−"}
 .directory-inner {padding:.85rem}
+.directory-area {border-top:1px solid var(--mo-border)}
+.directory-area summary {padding-inline:.55rem;background:var(--mo-surface);color:var(--mo-accent)}
+.tree-topics,.entry-list,.subject-cards {list-style:none;padding:0}
+.tree-topics {margin:0 .4rem .4rem .65rem;border-inline-start:2px solid var(--mo-border)}
+.tree-topics a {display:flex;align-items:center;min-height:var(--mo-control-height);padding:.35rem .65rem}
+.tree-topics a[aria-current] {background:var(--mo-accent-light);font-weight:700}
+.chapter:empty,#breadcrumbs:empty,#navigation:empty,[hidden] {display:none!important}
+#breadcrumbs ol {display:flex;flex-wrap:wrap;list-style:none;align-items:center;gap:0 .45rem;padding:0}
+#breadcrumbs li {display:flex;align-items:center;gap:.45rem}
+#breadcrumbs li+li::before {content:"›";color:var(--mo-muted)}
+#breadcrumbs a {display:inline-flex;align-items:center;min-height:var(--mo-control-height)}
+.subject-cards {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:.85rem;margin-top:1.35rem}
+.subject-card {position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:.6rem;padding:1rem;border:1px solid var(--mo-border);border-top:3px solid var(--mo-accent)}
+.subject-card h2 {font-size:1.4rem}
+.subject-card a::after {content:"";position:absolute;inset:0}
+.subject-card:hover {background:var(--mo-surface-2)}
+.subject-card:focus-within {outline:3px solid var(--mo-focus);outline-offset:2px}
+.subject-card .count {margin-top:auto}
+.topic-filter {display:grid;gap:.25rem;justify-items:start;margin:1.35rem 0 .7rem}
+.list-status {margin:.45rem 0;color:var(--mo-muted);font-size:.92rem}
+.result-title {overflow-wrap:anywhere}
+.result-path {display:block;margin-top:.2rem}
+.entry-list .result-title {text-decoration:underline;text-underline-offset:.18em}
+.entry-list .kind {text-align:end}
 label,.label {display:block;font-weight:700;font-size:.92rem}
 .directory input,.map-filter input {width:100%;margin:.25rem 0 .7rem}
 .count,.kind,.context,.caption,.map-status {color:var(--mo-muted);font-size:.9rem}
