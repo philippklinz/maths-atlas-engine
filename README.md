@@ -17,3 +17,9 @@ Einträge, Beweise, Beweisschritte und die gewählte Ansicht sind direkt verlink
 ## Browser-Ressourcen
 
 Die Engine besteht aus HTML, CSS und JavaScript-Modulen. Die Mindmap lädt das lokale vis-network 10.1.5 erst beim ersten Öffnen. Herkunft und Lizenztexte stehen in `vendor/NOTICES.txt`. Die Schriftdateien stammen aus [LiberationFontsWeb](https://github.com/philippklinz/LiberationFontsWeb), ihre Lizenz liegt in `assets/fonts/LICENSE`.
+
+## Gestaltung und Prüfung
+
+Die Oberfläche folgt der [praktischen Modern-Objectivity-Vorlage](https://github.com/philippklinz/modern-objectivity-style). Leseansicht und Mindmap teilen Verzeichnis, Ansichtswechsel und Rücksprung. Die Komponenten verwenden die semantischen Hell-/Dunkel-Farben, eckige Konturen und dieselbe Mindesthöhe von 2,75 rem. Links sind unterstrichen, der Fokus erhält eine eigene Kontur. Unter jeder Karte bietet eine Tastaturliste dieselben Ziele und Fundstellen an. Der Pilotbestand und die Bedienoberfläche sind deutschsprachig.
+
+Mit benachbartem Content-Checkout, Python, Playwright und Chromium läuft der Navigationstest über `python3 tests/navigation.py`. Für ein vorhandenes Chromium kann `CHROME_BIN` auf die ausführbare Datei zeigen. Der Test schaltet die Content-Quelle auf den lokalen HTTP-Server um.
