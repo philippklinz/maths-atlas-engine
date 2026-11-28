@@ -1,4 +1,4 @@
-import {el, section, webURL} from "./dom.js"
+import {el, figureImage, section, webURL} from "./dom.js"
 import {destination} from "./model.js"
 
 export function renderReading({article, entry, atlas, route, link}) {
@@ -27,11 +27,7 @@ export function renderReading({article, entry, atlas, route, link}) {
     }
     if (entry.figure) {
       const figure = atlas.data.figures[entry.figure]
-      const image = el("img")
-      image.width = figure.width
-      image.height = figure.height
-      image.alt = figure.alt
-      image.src = webURL(figure.src, atlas.source)
+      const image = figureImage(figure, atlas.source)
       overview.append(el("figure", "", image, el("figcaption", "caption", figure.caption)))
     }
     article.append(overview)

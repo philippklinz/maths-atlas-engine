@@ -1,6 +1,6 @@
 import {el} from "./dom.js"
 import {loadAtlas, normalize, pathFor, readRoute} from "./model.js"
-import {entryCount, renderCards, renderEntryList, renderTopic, renderTrail, renderTree} from "./catalog.js"
+import {entryCount, renderCards, renderEntryList, renderIntro, renderTopic, renderTrail, renderTree} from "./catalog.js"
 import {renderReading} from "./reader.js"
 import {renderMap} from "./map.js"
 
@@ -8,7 +8,7 @@ const $ = id => document.getElementById(id)
 const article = $("article")
 const directory = $("directory")
 const search = $("catalog-search")
-const wide = matchMedia("(min-width:52.01rem)")
+const narrow = matchMedia("(max-width:56.25rem)")
 const dark = matchMedia("(prefers-color-scheme:dark)")
 const theme = $("theme")
 let atlas, route, mapView, searchPage, topicPage
@@ -103,7 +103,7 @@ function go(target, options = {}, active = document.activeElement) {
   }
   const key = pathFor(target)
   if (key === pathFor(route) && !options.back && !options.self) {
-    if (options.directory && !wide.matches) {
+    if (options.directory && narrow.matches) {
       directory.open = false
       $("entry-title")?.focus({preventScroll:true})
     }
@@ -173,7 +173,7 @@ function render(state, moveFocus) {
   const area = topic?.area || atlas.areas.get(route.area)
   const home = !route.id && !route.area && !route.topic
   const saved = state.saved
-  directory.open = saved?.directory ?? wide.matches
+  directory.open = saved?.directory ?? !narrow.matches
   search.value = saved?.search || ""
   renderTree($("catalog-tree"), atlas, area, topic, saved?.openAreas, link)
   showSearch(saved?.searchPage)
@@ -181,22 +181,30 @@ function render(state, moveFocus) {
   navigation(state, entry)
   article.replaceChildren()
   const missing = route.id ? "Eintrag nicht gefunden" : (route.area ? "Gebiet nicht gefunden" : "Thema nicht gefunden")
-  const title = entry?.title || topic?.title || area?.title || (home ? "Themenauswahl" : missing)
+  const title = entry?.title || topic?.title || area?.title || (home ? "Formeln und ihre Verbindungen." : missing)
   const heading = el("h1", "", title)
   heading.id = "entry-title"
   heading.tabIndex = -1
-  $("chapter").textContent = area?.title || ""
+  const homeLink = $("home-link")
+  if (home) homeLink.setAttribute("aria-current", "page")
+  else homeLink.removeAttribute("aria-current")
+  article.className = entry ? "entry-page" : "catalog-page"
   const context = {article, entry, atlas, route, link, go, saved:saved?.graph}
   if (entry) {
     article.append(el("p", "context", area.title + " / " + entry.kind), heading, el("p", "lead", entry.summary))
     if (route.map) mapView = renderMap(context)
     else renderReading(context)
   } else if (home || area) {
-    article.append(heading)
-    const summary = (topic || area)?.summary
-    if (summary) article.append(el("p", "lead", summary))
+    if (home) article.append(renderIntro(heading, atlas, link))
+    else {
+      const intro = el("header", "subject-intro", el("p", "eyebrow", topic ? area.title : "Gebiet"), heading)
+      const summary = (topic || area).summary
+      if (summary) intro.append(el("p", "lead", summary))
+      article.append(intro)
+    }
     if (topic) topicPage = renderTopic(article, topic, context, saved?.topicPage)
-    else article.append(renderCards(home ? atlas.areas.values() : area.topics, home, link))
+    else article.append(el("section", "subjects", el("h2", "", home ? "Gebiet auswählen" : "Thema auswählen"),
+      renderCards(home ? atlas.areas.values() : area.topics, home, link)))
   } else {
     article.append(heading, link("Zur Themenauswahl", {}, {directory:true}, "control"))
   }
@@ -219,6 +227,12 @@ async function start() {
     atlas = await loadAtlas()
     $("entry-count").textContent = entryCount(atlas.entries.size)
     document.querySelector(".brand").href = pathFor({})
+    const grid = el("span", "grid-icon")
+    grid.setAttribute("aria-hidden", "true")
+    const homeLink = link("Themenauswahl", {}, {directory:true}, "rail-home")
+    homeLink.prepend(grid)
+    homeLink.id = "home-link"
+    $("rail-nav").append(homeLink)
     const initial = readRoute(atlas.data.start)
     const key = pathFor(initial)
     const state = history.state?.key === key ? history.state : {key}
@@ -234,7 +248,7 @@ async function start() {
 }
 search.oninput = () => { if (atlas) showSearch(); scheduleSave() }
 search.dataset.key = "catalog-search"
-wide.addEventListener("change", () => { directory.open = wide.matches })
+narrow.addEventListener("change", () => { directory.open = !narrow.matches })
 document.querySelector(".skip").onclick = event => {
   event.preventDefault()
   $("lesebereich").focus()

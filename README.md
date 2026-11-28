@@ -22,6 +22,8 @@ Die Engine besteht aus HTML, CSS und JavaScript-Modulen. Die Mindmap lädt das l
 
 ## Gestaltung und Prüfung
 
-Die Oberfläche folgt der [praktischen Modern-Objectivity-Vorlage](https://github.com/philippklinz/modern-objectivity-style). Leseansicht und Mindmap teilen Verzeichnis, Ansichtswechsel und Rücksprung. Die Komponenten verwenden die semantischen Hell-/Dunkel-Farben, eckige Konturen und dieselbe Mindesthöhe von 2,75 rem. Links sind unterstrichen, der Fokus erhält eine eigene Kontur. Unter jeder Karte bietet eine Tastaturliste dieselben Ziele und Fundstellen an. Der Pilotbestand und die Bedienoberfläche sind deutschsprachig.
+Die Oberfläche folgt der [praktischen Modern-Objectivity-Vorlage](https://github.com/philippklinz/modern-objectivity-style). Seitenleiste, Kopfzeile, Serifentitel und Themenkarten orientieren sich am People Atlas. Auf der Startseite stammen die Beispielformel und ihre Skizze aus dem in der Sammlung gesetzten Starteintrag. Auf kleinen Bildschirmen lässt sich das Verzeichnis oben öffnen. Der Beispiellink bleibt direkt erreichbar.
+
+Leseansicht und Mindmap teilen Verzeichnis, Ansichtswechsel und Rücksprung. Die Bedienelemente verwenden die semantischen Hell-/Dunkel-Farben, eckige Konturen und eine Mindesthöhe von 2,75 rem. Textlinks sind unterstrichen, der Tastaturfokus erhält eine eigene Kontur. Unter der Mindmap bietet eine Liste dieselben Ziele und Fundstellen an. Der Pilotbestand und die Bedienoberfläche sind deutschsprachig.
 
 Mit benachbartem Content-Checkout, Python, Playwright und Chromium läuft der Navigationstest über `python3 tests/navigation.py`. Für ein vorhandenes Chromium kann `CHROME_BIN` auf die ausführbare Datei zeigen. Der Test schaltet die Content-Quelle auf den lokalen HTTP-Server um.
